@@ -1,0 +1,301 @@
+'''
+First run at developing a basic AI / Google Assistant type thing
+This is very very basic and is no where near as complicated as say GA or Amazon's Alexa
+But its a nice fun start into thinking that kind of way.
+'''
+
+import speech_recognition as sr
+import pyttsx3
+import datetime
+import wikipedia
+import webbrowser
+import os
+import time
+import subprocess
+import json
+import requests
+from wikipedia.wikipedia import languages
+import smtplib
+
+# initialize the text to speech engine using Sapi5 from Microsoft
+engine = pyttsx3.init('sapi5')
+voices = engine.getProperty('voices')
+engine.setProperty('voice', voices[1].id) #changes the voice (male [0] or female [1])
+
+#webbrowser.get('Chrome') ???? This isnt working and I am not sure why. Need to look into this more. 
+
+
+# speech function to pass to the TTS speech engine
+def Speech(text):
+
+    engine.say(text)
+    engine.runAndWait()
+    
+# greet user depending on time of day    
+def Greeting():
+
+    hour = datetime.datetime.now().hour
+
+    if hour>=0 and hour<12:
+        print("Good Morning Great Creator!")
+        Speech("Good Morning Great Creator!")
+        
+    elif hour>=12 and hour<18:
+        print("Good Afternoon Great Creator!")
+        Speech("Good Afternoon Great Creator!")
+        
+    else:
+        print("Good Evening Great Creator!")
+        Speech("Good Evening Great Creator!")
+        
+
+    print("I am Buttface, your personal assistant.")
+    Speech("I am Buttface, your personal assistant.")
+    
+
+
+# function that captures audio input 
+def Commands():
+
+    r = sr.Recognizer()
+    with sr.Microphone() as source:
+        print("Awaiting your orders, sir.")
+        Speech("Awaiting your orders, sir.")
+        audio = r.listen(source)
+
+        try:
+            statement = r.recognize_google(audio, language='en')
+            print(f'Creator said: {statement}\n')
+        except Exception as e:
+            Speech("Excuse me sir, I did not understand, please try again.")
+            return "None"
+        return statement
+
+# function to allow multiple actions before program quits.
+def Loop():
+
+    Speech("Can I help you with anything else?")
+    print("Can I help you with anything else?")
+
+    statement = Commands().lower()
+
+    if "yes" in statement or 'yep' in statement or 'yeah' in statement:
+        Main()
+    if "no" in statement:
+        Speech("Thank you sir, have a great day!")
+        print("Thank you sir, have a great day!")
+        exit()
+
+# function that handles the different inputs a user can make. 
+def Main():
+
+    print('How can I help you?')
+    Speech("How can I help you?")
+
+    statement = Commands().lower()
+    
+    if "good bye" in statement or "ok bye" in statement or "buh bye" in statement or "bye-bye" in statement or 'bye' in statement:
+        print('Powering down. Goodbye.')
+        Speech("powering down. Goodbye.")
+        time.sleep(1)
+        exit()
+
+    if "wikipedia" in statement or "wiki" in statement:
+        statement = statement.replace("wikipedia", "")
+        results = wikipedia.summary(statement, sentences = 5)
+        print(f"Searching wikipedia for {statement}")
+        Speech(f"Searching wikipedia for {statement}") 
+        time.sleep(2)
+        print('According to Wikipedia')
+        Speech("According to Wikipedia")
+        print(results)
+        Speech(results)
+        time.sleep(5)
+        Loop()
+
+    if "open youtube" in statement:
+        webbrowser.open_new_tab("https://www.youtube.com")
+        print("Launching YouTube now")
+        Speech("Launching YouTube now")
+        time.sleep(5)
+        Loop()
+
+    if "chrome" in statement:
+        webbrowser.open_new_tab("https://www.google.com")
+        print("Launching Google Chrome now")
+        Speech("Launching Google Chrome now")
+        time.sleep(5)
+        Loop()
+
+    if 'weather' in statement or 'forecast' in statement:
+
+        api_key = 'add364ebb97cd91c8d024101440ce4bf'
+        base_url = 'https://api.openweathermap.org/data/2.5/weather?'
+        print("What city do you want to know the forecast for?")
+        Speech(("What city do you want to know the forecast for?"))
+        city_name = Commands()
+        comp_url = base_url + '&q=' + city_name + ',us&appid=' + api_key + '&units=imperial'
+        response = requests.get(comp_url)
+        forecast = response.json()
+        a = forecast['main']
+        b = forecast['weather']
+        c = forecast['name']
+        d = forecast['wind']
+
+        temperature = a['temp']
+        description = b[0]['description']
+        tempfeel = a['feels_like']
+        tempmin = a['temp_min']
+        tempmax = a['temp_max']
+        name = c
+        windspeed = d['speed']
+        winddir = d['deg']
+        humidity = a['humidity']
+
+  #     Rounding results into round numbers where necessary
+
+        temperature = round(temperature)
+        tempfeel = round(tempfeel)
+        tempmin = round(tempmin)
+        tempmax = round(tempmax)
+        windspeed = round(windspeed)
+   
+   #     If ladder that converts wind direction from degrees into human readable cardinal directions.
+
+        if winddir >= 350 or winddir >=0 and winddir < 20:
+            winddir = 'North'
+        elif winddir >= 20 and winddir < 40:
+            winddir = 'North North East'
+        elif winddir >= 40 and winddir < 60:
+            winddir = 'North East' 
+        elif winddir >= 60 and winddir < 80:
+            winddir = 'East North East'
+        elif winddir >= 80 and winddir < 110:
+            winddir = 'East'
+        elif winddir >= 110 and winddir < 130:
+            winddir = 'East South East' 
+        elif winddir >= 130 and winddir < 150:
+            winddir = 'South East'  
+        elif winddir >= 150 and winddir < 170:
+            winddir = 'South South East' 
+        elif winddir >= 170 and winddir < 200:
+            winddir = 'South'   
+        elif winddir >= 200 and winddir < 220:
+            winddir = 'South South West' 
+        elif winddir >= 220 and winddir < 240:
+            winddir = 'South West'  
+        elif winddir >= 240 and winddir < 260:
+            winddir = 'West South West' 
+        elif winddir >= 260 and winddir < 290:
+            winddir = 'West'   
+        elif winddir >= 290 and winddir < 310:
+            winddir = 'West North West' 
+        elif winddir >= 310 and winddir < 330:
+            winddir = 'North West'  
+        elif winddir >= 330 and winddir < 350:
+            winddir = 'North North West'
+
+        #print(forecast) # for testing purposes and data validation.
+
+        # the following print statements print the retrieved data into a format that is human readable.
+
+        print('\nHere is today\'s forecast for {}.\n'.format(name)) 
+        print('Today\'s forecast calls for {}.'.format(description))
+        print('The current Temperature is {} degrees Fahrenheit.'.format(temperature))
+        print('The humidity is {}%.'.format(humidity))
+        print('The high for today is {} degrees Fahrenheit.'.format(tempmax))
+        print('The low for today is {} degrees Fahrenheit.'.format(tempmin))
+        print('The temperature feels like {} degrees Fahrenheit.'.format(tempfeel))
+        print('The current wind speed is {} miles per hour from the {}.'.format(windspeed, winddir))
+
+        Speech('\nHere is today\'s forecast for {}.\n'.format(name)) 
+        Speech('Today\'s forecast calls for {}.'.format(description))
+        Speech('The current Temperature is {} degrees Fahrenheit.'.format(temperature))
+        Speech('The humidity is {}%.'.format(humidity))
+        Speech('The high for today is {} degrees Fahrenheit.'.format(tempmax))
+        Speech('The low for today is {} degrees Fahrenheit.'.format(tempmin))
+        Speech('The temperature feels like {} degrees Fahrenheit.'.format(tempfeel))
+        Speech('The current wind speed is {} miles per hour from the {}.'.format(windspeed, winddir))
+
+        Loop()
+        
+
+    if 'time' in statement:
+        strTime = datetime.datetime.now().strftime('%H:%M:%S')
+        print(f"The time is {strTime}")
+        Speech(f"The time is {strTime}")
+        time.sleep(5)
+        Loop()
+
+    if 'who are you' in statement or 'what can you do' in statement:
+        print("I am ButtFace version 1.0. I am a newly created personal assistant for you. I can handle minor tasks such as getting a weather forecast"
+              ", opening YouTube or Google Chrome and searching Wikipedia or the internet. Maybe one day I will learn to dance...one day.")
+        Speech("I am ButtFace version one point oh. I am a newly created personal assistant for you. I can handle minor tasks such as getting a weather forecast"
+              ", opening YouTube or Google Chrome and searching Wikipedia or the internet. Maybe one day I will learn to dance...one day.")
+
+        time.sleep(3)
+        Loop()
+
+    if 'search for' in statement:
+        statement = statement.replace('search for', "")
+        webbrowser.open_new_tab(statement)
+        time.sleep(5)
+        Loop()
+
+    
+    if 'send an email' in statement:
+
+        Speech("Please enter an email address below.")
+
+        gmail_user = 'blackmagephotography@gmail.com'
+        gmail_app_pw = 'fjgidtkzrcfrwous'
+
+        sent_from = gmail_user
+        sent_to = input('Please enter an email address: ')
+        subject = 'A message from Buttface'
+        body = 'We\'re no strangers to love.\nYou know the rules and so do I'
+        'A full commitment\'s what I\'m thinking of'
+        'You wouldn\'t get this from any other guy'
+        'I just wanna tell you how I\'m feeling'
+        'Gotta make you understand'
+        'Never gonna give you up'
+        'Never gonna let you down'
+        'Never gonna run around and desert you'
+        'Never gonna make you cry'
+        'Never gonna say goodbye'
+        'Never gonna tell a lie and hurt you \n\n - Buttface'
+        email_text = """From: %s\nTo: %s\nSubject: %s\n\n%s""" % (sent_from, ", ".join(sent_to), subject, body)
+        
+        if '@' not in sent_to or '.com' not in sent_to #or '.org' not in sent_to or '.net' not in sent_to:
+            print('That is not a valid email address, please try again.')
+            Speech('That is not a valid email address, please try again.')
+            
+
+
+        try:
+            server_ssl = smtplib.SMTP_SSL('smtp.gmail.com', 465)
+            server_ssl.ehlo
+            server_ssl.login(gmail_user, gmail_app_pw)
+            server_ssl.sendmail(sent_from, sent_to, email_text)
+            server_ssl.close()
+            print('Email sent successfully')
+            Speech("Email sent successfully")
+        except:
+            print('Something went horribly wrong.')
+            Speech("Something went horrible wrong.")
+
+        Loop()
+
+
+print('BF 1.0 Initializing')
+time.sleep(.5)
+print('.')
+time.sleep(.5)
+print('..')
+time.sleep(.5)
+print('...')
+print('Initialization complete!')
+Speech("Initialization Complete!")
+
+Greeting()
+Main()
